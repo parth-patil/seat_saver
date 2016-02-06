@@ -6,6 +6,7 @@ Elm.SeatSaver.make = function (_elm) {
    var _U = Elm.Native.Utils.make(_elm),
    $Basics = Elm.Basics.make(_elm),
    $Debug = Elm.Debug.make(_elm),
+   $Effects = Elm.Effects.make(_elm),
    $Html = Elm.Html.make(_elm),
    $Html$Attributes = Elm.Html.Attributes.make(_elm),
    $Html$Events = Elm.Html.Events.make(_elm),
@@ -13,12 +14,13 @@ Elm.SeatSaver.make = function (_elm) {
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm),
-   $StartApp$Simple = Elm.StartApp.Simple.make(_elm);
+   $StartApp = Elm.StartApp.make(_elm),
+   $Task = Elm.Task.make(_elm);
    var _op = {};
    var update = F2(function (action,model) {
       var _p0 = action;
       var updateSeat = function (seat) {    return _U.eq(seat.seatNo,_p0._0.seatNo) ? _U.update(seat,{occupied: $Basics.not(seat.occupied)}) : seat;};
-      return A2($List.map,updateSeat,model);
+      return {ctor: "_Tuple2",_0: A2($List.map,updateSeat,model),_1: $Effects.none};
    });
    var Toggle = function (a) {    return {ctor: "Toggle",_0: a};};
    var seatItem = F2(function (address,seat) {
@@ -28,19 +30,24 @@ Elm.SeatSaver.make = function (_elm) {
       _U.list([$Html.text($Basics.toString(seat.seatNo))]));
    });
    var view = F2(function (address,model) {    return A2($Html.ul,_U.list([$Html$Attributes.$class("seats")]),A2($List.map,seatItem(address),model));});
-   var init = _U.list([{seatNo: 1,occupied: false}
-                      ,{seatNo: 2,occupied: false}
-                      ,{seatNo: 3,occupied: false}
-                      ,{seatNo: 4,occupied: false}
-                      ,{seatNo: 5,occupied: false}
-                      ,{seatNo: 6,occupied: false}
-                      ,{seatNo: 7,occupied: false}
-                      ,{seatNo: 8,occupied: false}
-                      ,{seatNo: 9,occupied: false}
-                      ,{seatNo: 10,occupied: false}
-                      ,{seatNo: 11,occupied: false}
-                      ,{seatNo: 12,occupied: false}]);
-   var main = $StartApp$Simple.start({model: init,update: update,view: view});
+   var init = function () {
+      var seats = _U.list([{seatNo: 1,occupied: false}
+                          ,{seatNo: 2,occupied: false}
+                          ,{seatNo: 3,occupied: false}
+                          ,{seatNo: 4,occupied: false}
+                          ,{seatNo: 5,occupied: false}
+                          ,{seatNo: 6,occupied: false}
+                          ,{seatNo: 7,occupied: false}
+                          ,{seatNo: 8,occupied: false}
+                          ,{seatNo: 9,occupied: false}
+                          ,{seatNo: 10,occupied: false}
+                          ,{seatNo: 11,occupied: false}
+                          ,{seatNo: 12,occupied: false}]);
+      return {ctor: "_Tuple2",_0: seats,_1: $Effects.none};
+   }();
+   var app = $StartApp.start({init: init,update: update,view: view,inputs: _U.list([])});
+   var main = app.html;
+   var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
    var Seat = F2(function (a,b) {    return {seatNo: a,occupied: b};});
-   return _elm.SeatSaver.values = {_op: _op,Seat: Seat,init: init,Toggle: Toggle,update: update,view: view,seatItem: seatItem,main: main};
+   return _elm.SeatSaver.values = {_op: _op,Seat: Seat,init: init,Toggle: Toggle,update: update,view: view,seatItem: seatItem,app: app,main: main};
 };
