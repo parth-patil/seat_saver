@@ -11034,10 +11034,8 @@ Elm.SeatSaver.make = function (_elm) {
            var doUpdate = function (seat) {    return _U.eq(seat.seatNo,_p1.seatNo) ? seatAfterToggle : seat;};
            var newModel = _U.update(model,{seats: A2($List.map,doUpdate,model.seats),lastUpdatedSeat: $Maybe.Just(seatAfterToggle)});
            return {ctor: "_Tuple2",_0: newModel,_1: $Effects.none};
-         case "SetSeats": var _p2 = $Debug.log("SeatSeats was called ....");
-           return {ctor: "_Tuple2",_0: _U.update(model,{seats: _p0._0}),_1: $Effects.none};
-         default: var _p3 = $Debug.log("SeatUpdate was called ....");
-           return {ctor: "_Tuple2",_0: _U.update(model,{seats: A2(updateSeat,model.seats,_p0._0)}),_1: $Effects.none};}
+         case "SetSeats": return {ctor: "_Tuple2",_0: _U.update(model,{seats: _p0._0}),_1: $Effects.none};
+         default: return {ctor: "_Tuple2",_0: _U.update(model,{seats: A2(updateSeat,model.seats,_p0._0)}),_1: $Effects.none};}
    });
    var SeatUpdate = function (a) {    return {ctor: "SeatUpdate",_0: a};};
    var seatUpdateActions = A2($Signal.map,SeatUpdate,serverSeatUpdates);

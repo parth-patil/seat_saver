@@ -68,19 +68,10 @@ update action model =
         ( newModel, Effects.none )
 
     SetSeats seats ->
-      let
-        _ = Debug.log "SeatSeats was called ...."
-      in
-        ( { model | seats = seats }, Effects.none )
+      ( { model | seats = seats }, Effects.none )
 
     SeatUpdate seat ->
-      let
-        _ = Debug.log "SeatUpdate was called ...."
-      in
-        --( model, Effects.none )
-        ( { model | seats = (updateSeat model.seats seat) }, Effects.none )
-
-
+      ( { model | seats = (updateSeat model.seats seat) }, Effects.none )
 
 
 updateSeat : List Seat -> Seat -> List Seat
@@ -118,7 +109,6 @@ decodeSeats =
     Json.at [ "data" ] (Json.list seat)
 
 
-
 -- SIGNALS
 
 -- incoming ports
@@ -147,7 +137,7 @@ port seatUpdates =
   in
     app.model
       |> Signal.filterMap (\m -> m.lastUpdatedSeat) defaultSeat
-      |> Signal.dropRepeats
+      |> Signal.dropRepeats -- its essential to add dropRepeats else you will have an infinite loop from server to the client
 
 
 -- VIEW
