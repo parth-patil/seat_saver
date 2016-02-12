@@ -2,7 +2,7 @@ defmodule SeatSaver.UserSocket do
   use Phoenix.Socket
 
   ## Channels
-  # channel "rooms:*", SeatSaver.RoomChannel
+  channel "seats:planner", SeatSaver.SeatChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket

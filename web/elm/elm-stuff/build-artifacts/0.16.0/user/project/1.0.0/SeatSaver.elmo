@@ -10,6 +10,7 @@ Elm.SeatSaver.make = function (_elm) {
    $Html = Elm.Html.make(_elm),
    $Html$Attributes = Elm.Html.Attributes.make(_elm),
    $Html$Events = Elm.Html.Events.make(_elm),
+   $Json$Decode = Elm.Json.Decode.make(_elm),
    $List = Elm.List.make(_elm),
    $Maybe = Elm.Maybe.make(_elm),
    $Result = Elm.Result.make(_elm),
@@ -17,11 +18,47 @@ Elm.SeatSaver.make = function (_elm) {
    $StartApp = Elm.StartApp.make(_elm),
    $Task = Elm.Task.make(_elm);
    var _op = {};
+   var serverSeatUpdates = Elm.Native.Port.make(_elm).inboundSignal("serverSeatUpdates",
+   "SeatSaver.Seat",
+   function (v) {
+      return typeof v === "object" && "seatNo" in v && "occupied" in v ? {_: {}
+                                                                         ,seatNo: typeof v.seatNo === "number" && isFinite(v.seatNo) && Math.floor(v.seatNo) === v.seatNo ? v.seatNo : _U.badPort("an integer",
+                                                                         v.seatNo)
+                                                                         ,occupied: typeof v.occupied === "boolean" ? v.occupied : _U.badPort("a boolean (true or false)",
+                                                                         v.occupied)} : _U.badPort("an object with fields `seatNo`, `occupied`",v);
+   });
+   var seatLists = Elm.Native.Port.make(_elm).inboundSignal("seatLists",
+   "List SeatSaver.Seat",
+   function (v) {
+      return typeof v === "object" && v instanceof Array ? Elm.Native.List.make(_elm).fromArray(v.map(function (v) {
+         return typeof v === "object" && "seatNo" in v && "occupied" in v ? {_: {}
+                                                                            ,seatNo: typeof v.seatNo === "number" && isFinite(v.seatNo) && Math.floor(v.seatNo) === v.seatNo ? v.seatNo : _U.badPort("an integer",
+                                                                            v.seatNo)
+                                                                            ,occupied: typeof v.occupied === "boolean" ? v.occupied : _U.badPort("a boolean (true or false)",
+                                                                            v.occupied)} : _U.badPort("an object with fields `seatNo`, `occupied`",v);
+      })) : _U.badPort("an array",v);
+   });
+   var updateSeat = F2(function (seats,seatToUpdate) {
+      var replaceIfMatch = function (seat) {    return _U.eq(seat.seatNo,seatToUpdate.seatNo) ? seatToUpdate : seat;};
+      return A2($List.map,replaceIfMatch,seats);
+   });
    var update = F2(function (action,model) {
       var _p0 = action;
-      var updateSeat = function (seat) {    return _U.eq(seat.seatNo,_p0._0.seatNo) ? _U.update(seat,{occupied: $Basics.not(seat.occupied)}) : seat;};
-      return {ctor: "_Tuple2",_0: A2($List.map,updateSeat,model),_1: $Effects.none};
+      switch (_p0.ctor)
+      {case "Toggle": var _p1 = _p0._0;
+           var seatAfterToggle = _U.update(_p1,{occupied: $Basics.not(_p1.occupied)});
+           var doUpdate = function (seat) {    return _U.eq(seat.seatNo,_p1.seatNo) ? seatAfterToggle : seat;};
+           var newModel = _U.update(model,{seats: A2($List.map,doUpdate,model.seats),lastUpdatedSeat: $Maybe.Just(seatAfterToggle)});
+           return {ctor: "_Tuple2",_0: newModel,_1: $Effects.none};
+         case "SetSeats": var _p2 = $Debug.log("SeatSeats was called ....");
+           return {ctor: "_Tuple2",_0: _U.update(model,{seats: _p0._0}),_1: $Effects.none};
+         default: var _p3 = $Debug.log("SeatUpdate was called ....");
+           return {ctor: "_Tuple2",_0: _U.update(model,{seats: A2(updateSeat,model.seats,_p0._0)}),_1: $Effects.none};}
    });
+   var SeatUpdate = function (a) {    return {ctor: "SeatUpdate",_0: a};};
+   var seatUpdateActions = A2($Signal.map,SeatUpdate,serverSeatUpdates);
+   var SetSeats = function (a) {    return {ctor: "SetSeats",_0: a};};
+   var incomingActions = A2($Signal.map,SetSeats,seatLists);
    var Toggle = function (a) {    return {ctor: "Toggle",_0: a};};
    var seatItem = F2(function (address,seat) {
       var occupiedClass = seat.occupied ? "occupied" : "available";
@@ -29,25 +66,44 @@ Elm.SeatSaver.make = function (_elm) {
       _U.list([$Html$Attributes.$class(A2($Basics._op["++"],"seat ",occupiedClass)),A2($Html$Events.onClick,address,Toggle(seat))]),
       _U.list([$Html.text($Basics.toString(seat.seatNo))]));
    });
-   var view = F2(function (address,model) {    return A2($Html.ul,_U.list([$Html$Attributes.$class("seats")]),A2($List.map,seatItem(address),model));});
-   var init = function () {
-      var seats = _U.list([{seatNo: 1,occupied: false}
-                          ,{seatNo: 2,occupied: false}
-                          ,{seatNo: 3,occupied: false}
-                          ,{seatNo: 4,occupied: false}
-                          ,{seatNo: 5,occupied: false}
-                          ,{seatNo: 6,occupied: false}
-                          ,{seatNo: 7,occupied: false}
-                          ,{seatNo: 8,occupied: false}
-                          ,{seatNo: 9,occupied: false}
-                          ,{seatNo: 10,occupied: false}
-                          ,{seatNo: 11,occupied: false}
-                          ,{seatNo: 12,occupied: false}]);
-      return {ctor: "_Tuple2",_0: seats,_1: $Effects.none};
-   }();
-   var app = $StartApp.start({init: init,update: update,view: view,inputs: _U.list([])});
+   var view = F2(function (address,model) {    return A2($Html.ul,_U.list([$Html$Attributes.$class("seats")]),A2($List.map,seatItem(address),model.seats));});
+   var emptyModel = {seats: _U.list([]),lastUpdatedSeat: $Maybe.Nothing};
+   var init = {ctor: "_Tuple2",_0: emptyModel,_1: $Effects.none};
+   var app = $StartApp.start({init: init,update: update,view: view,inputs: _U.list([incomingActions,seatUpdateActions])});
+   var seatUpdates = Elm.Native.Port.make(_elm).outboundSignal("seatUpdates",
+   function (v) {
+      return {seatNo: v.seatNo,occupied: v.occupied};
+   },
+   function () {
+      var defaultSeat = {seatNo: -1,occupied: false};
+      return $Signal.dropRepeats(A3($Signal.filterMap,function (m) {    return m.lastUpdatedSeat;},defaultSeat,app.model));
+   }());
    var main = app.html;
    var tasks = Elm.Native.Task.make(_elm).performSignal("tasks",app.tasks);
+   var Model = F2(function (a,b) {    return {seats: a,lastUpdatedSeat: b};});
    var Seat = F2(function (a,b) {    return {seatNo: a,occupied: b};});
-   return _elm.SeatSaver.values = {_op: _op,Seat: Seat,init: init,Toggle: Toggle,update: update,view: view,seatItem: seatItem,app: app,main: main};
+   var decodeSeats = function () {
+      var seat = A3($Json$Decode.object2,
+      F2(function (seatNo,occupied) {    return A2(Seat,seatNo,occupied);}),
+      A2($Json$Decode._op[":="],"seatNo",$Json$Decode.$int),
+      A2($Json$Decode._op[":="],"occupied",$Json$Decode.bool));
+      return A2($Json$Decode.at,_U.list(["data"]),$Json$Decode.list(seat));
+   }();
+   return _elm.SeatSaver.values = {_op: _op
+                                  ,Seat: Seat
+                                  ,Model: Model
+                                  ,emptyModel: emptyModel
+                                  ,init: init
+                                  ,Toggle: Toggle
+                                  ,SetSeats: SetSeats
+                                  ,SeatUpdate: SeatUpdate
+                                  ,update: update
+                                  ,updateSeat: updateSeat
+                                  ,decodeSeats: decodeSeats
+                                  ,incomingActions: incomingActions
+                                  ,seatUpdateActions: seatUpdateActions
+                                  ,view: view
+                                  ,seatItem: seatItem
+                                  ,app: app
+                                  ,main: main};
 };
